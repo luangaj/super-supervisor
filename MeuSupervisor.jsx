@@ -156,9 +156,8 @@ const ESTOQUE_PADRAO = [
 
 const GRUPOS_EST = [...new Set(ESTOQUE_PADRAO.map(i => i.grupo))];
 const PERFIS = [
-  {id:"gestor", nome:"Luan (Gestor)",  role:"gestor",      emoji:"👑"},
+  {id:"gestor", nome:"Luan (Gestor)",  role:"gestor",      emoji:"👑", senha:"1234"},
   {id:"func1",  nome:"Funcionario 1",  role:"funcionario", emoji:"👤"},
-  {id:"func2",  nome:"Funcionario 2",  role:"funcionario", emoji:"👤"},
 ];
 
 const hoje      = () => new Date().toISOString().split("T")[0];
@@ -380,8 +379,74 @@ function Estoque({ nomeusr, isG, estItens, setEstItens, onCel }) {
   );
 }
 
+function LoginTela({ onLogin }) {
+  const [senhaModal, setSenhaModal] = useState(null);
+  const [senhaTxt, setSenhaTxt] = useState("");
+  const [erroSenha, setErroSenha] = useState(false);
+
+  const tentarLogin = (p) => {
+    if (p.senha) { setSenhaModal(p); setSenhaTxt(""); setErroSenha(false); }
+    else onLogin(p);
+  };
+  const confirmarSenha = () => {
+    if (senhaTxt === senhaModal.senha) { onLogin(senhaModal); setSenhaModal(null); }
+    else { setErroSenha(true); setSenhaTxt(""); }
+  };
+
+  return (
+    <div style={{padding:32,display:"flex",flexDirection:"column",gap:20,minHeight:"100vh",justifyContent:"center"}}>
+      {senhaModal && (
+        <div style={{position:"fixed",inset:0,background:"#000b",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#1e293b",borderRadius:20,padding:28,width:"100%",maxWidth:360,display:"flex",flexDirection:"column",alignItems:"center",gap:14,border:"1px solid #334155"}}>
+            <div style={{fontSize:44}}>🔐</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#f97316",textAlign:"center"}}>Acesso Gestor</div>
+            <div style={{fontSize:13,color:"#94a3b8",textAlign:"center"}}>Digite a senha para continuar</div>
+            <input
+              type="password"
+              placeholder="Senha"
+              value={senhaTxt}
+              onChange={e => { setSenhaTxt(e.target.value); setErroSenha(false); }}
+              onKeyDown={e => e.key === "Enter" && confirmarSenha()}
+              autoFocus
+              style={{...g.input, textAlign:"center", fontSize:20, letterSpacing:4, border: erroSenha ? "1px solid #ef4444" : "1px solid #334155"}}
+            />
+            {erroSenha && <div style={{fontSize:12,color:"#ef4444",fontWeight:700}}>Senha incorreta. Tente novamente.</div>}
+            <button onClick={confirmarSenha} style={{width:"100%",padding:14,background:"#f97316",border:"none",borderRadius:12,color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer"}}>Entrar</button>
+            <button onClick={() => setSenhaModal(null)} style={{width:"100%",padding:12,background:"transparent",border:"1px solid #334155",borderRadius:12,color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer"}}>Cancelar</button>
+          </div>
+        </div>
+      )}
+      <div style={{textAlign:"center",marginBottom:8}}>
+        <div style={{fontSize:60}}>🌀</div>
+        <h1 style={{fontSize:30,fontWeight:800,color:"#f97316",margin:"8px 0 4px",letterSpacing:-1}}>Meu Supervisor</h1>
+        <p style={{color:"#94a3b8",fontSize:14,lineHeight:1.6}}>Quem esta usando agora?</p>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {PERFIS.map(p => (
+          <button key={p.id} onClick={() => tentarLogin(p)} style={{padding:"18px 20px",background:p.role==="gestor"?"linear-gradient(135deg,#1c2333,#0f172a)":"#1e293b",border:`2px solid ${p.role==="gestor"?"#f97316":"#334155"}`,borderRadius:16,color:"#f1f5f9",cursor:"pointer",display:"flex",alignItems:"center",gap:16,textAlign:"left"}}>
+            <span style={{fontSize:34}}>{p.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:17,fontWeight:800,color:p.role==="gestor"?"#f97316":"#f1f5f9"}}>{p.nome}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{p.role==="gestor"?"Acesso restrito - Requer senha":"Acesso as tarefas e estoque"}</div>
+            </div>
+            <span style={{fontSize:22,color:"#475569"}}>{p.senha ? "🔒" : "›"}</span>
+          </button>
+        ))}
+      </div>
+      <div style={{background:"#1e293b",border:"1px solid #22c55e44",borderRadius:12,padding:"10px 14px",textAlign:"center"}}>
+        <div style={{fontSize:12,color:"#22c55e",fontWeight:700}}>🔴 Dados em tempo real via Firebase</div>
+        <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Todos os dispositivos sincronizados automaticamente</div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [perfil, setPerfil, pfOk] = useCloud("ms_perfil_v1", null);
+  const [perfil, setPerfilState] = useState(() => {
+    try { const s = localStorage.getItem("ms_perfil_local"); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const setPerfil = (p) => { setPerfilState(p); try { localStorage.setItem("ms_perfil_local", p ? JSON.stringify(p) : null); } catch {} };
+  const pfOk = true;
   const [alertas, setAlertas, alOk] = useCloud("ms_alertas_v2", ALERTAS_PADRAO);
   const [tarefas, setTarefas, tfOk] = useCloud("ms_tarefas_v2", TAREFAS_PADRAO);
   const [cats, setCats, ctOk] = useCloud("ms_cats_v2", CATS_PADRAO);
@@ -506,29 +571,7 @@ export default function App() {
   if (!perfil) {
     return (
       <div style={g.tela}>
-        <div style={{padding:32,display:"flex",flexDirection:"column",gap:20,minHeight:"100vh",justifyContent:"center"}}>
-          <div style={{textAlign:"center",marginBottom:8}}>
-            <div style={{fontSize:60}}>🌀</div>
-            <h1 style={{fontSize:30,fontWeight:800,color:"#f97316",margin:"8px 0 4px",letterSpacing:-1}}>Meu Supervisor</h1>
-            <p style={{color:"#94a3b8",fontSize:14,lineHeight:1.6}}>Quem esta usando agora?</p>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:12}}>
-            {PERFIS.map(p => (
-              <button key={p.id} onClick={() => setPerfil(p)} style={{padding:"18px 20px",background:p.role==="gestor"?"linear-gradient(135deg,#1c2333,#0f172a)":"#1e293b",border:`2px solid ${p.role==="gestor"?"#f97316":"#334155"}`,borderRadius:16,color:"#f1f5f9",cursor:"pointer",display:"flex",alignItems:"center",gap:16,textAlign:"left"}}>
-                <span style={{fontSize:34}}>{p.emoji}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:17,fontWeight:800,color:p.role==="gestor"?"#f97316":"#f1f5f9"}}>{p.nome}</div>
-                  <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{p.role==="gestor"?"Acesso completo - Painel gestor":"Acesso as tarefas e estoque"}</div>
-                </div>
-                <span style={{fontSize:22,color:"#475569"}}>›</span>
-              </button>
-            ))}
-          </div>
-          <div style={{background:"#1e293b",border:"1px solid #22c55e44",borderRadius:12,padding:"10px 14px",textAlign:"center"}}>
-            <div style={{fontSize:12,color:"#22c55e",fontWeight:700}}>🔴 Dados em tempo real via Firebase</div>
-            <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Todos os dispositivos sincronizados automaticamente</div>
-          </div>
-        </div>
+        <LoginTela onLogin={setPerfil}/>
         <style>{css}</style>
       </div>
     );

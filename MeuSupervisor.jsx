@@ -155,9 +155,9 @@ const ESTOQUE_PADRAO = [
 ];
 
 const GRUPOS_EST = [...new Set(ESTOQUE_PADRAO.map(i => i.grupo))];
-const PERFIS = [
-  {id:"gestor", nome:"Luan (Gestor)",  role:"gestor",      emoji:"👑", senha:"26102019"},
-  {id:"func1",  nome:"Funcionario 1",  role:"funcionario", emoji:"👤", senha:"1507"},
+const GESTOR = {id:"gestor", nome:"Luan (Gestor)", role:"gestor", emoji:"👑", senha:"26102019"};
+const FUNCS_PADRAO = [
+  {id:"func1", nome:"Funcionario 1", role:"funcionario", emoji:"👤", senha:"1507"},
 ];
 
 const hoje      = () => new Date().toISOString().split("T")[0];
@@ -457,7 +457,84 @@ function Estoque({ nomeusr, isG, estItens, setEstItens, onCel }) {
   );
 }
 
-function LoginTela({ onLogin }) {
+function GerenciarFuncs({ funcs, setFuncs, showT }) {
+  const [aberto, setAberto] = useState(false);
+  const [novoNome, setNovoNome] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [editando, setEditando] = useState(null);
+  const [editNome, setEditNome] = useState("");
+  const [editSenha, setEditSenha] = useState("");
+
+  const adicionar = async () => {
+    if (!novoNome.trim()) return showT("Digite o nome!", "erro");
+    if (!novaSenha.trim()) return showT("Digite a senha!", "erro");
+    const novo = {id:"func_"+Date.now(), nome:novoNome.trim(), role:"funcionario", emoji:"👤", senha:novaSenha.trim()};
+    await setFuncs([...funcs, novo]);
+    setNovoNome(""); setNovaSenha("");
+    showT("Funcionario adicionado!");
+  };
+
+  const salvarEdit = async () => {
+    if (!editNome.trim()) return showT("Nome vazio!", "erro");
+    if (!editSenha.trim()) return showT("Senha vazia!", "erro");
+    await setFuncs(funcs.map(f => f.id===editando ? {...f, nome:editNome.trim(), senha:editSenha.trim()} : f));
+    setEditando(null); showT("Atualizado!");
+  };
+
+  const excluir = async (id, nome) => {
+    if (!window.confirm(`Excluir "${nome}"?`)) return;
+    await setFuncs(funcs.filter(f => f.id!==id));
+    showT("Funcionario removido!");
+  };
+
+  return (
+    <div style={{background:"#1e293b",borderRadius:14,border:"1px solid #334155",marginBottom:8,overflow:"hidden"}}>
+      <button onClick={() => setAberto(!aberto)} style={{width:"100%",padding:"14px 16px",background:"transparent",border:"none",color:"#f1f5f9",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:14,fontWeight:800}}>👥 Gerenciar Funcionários</span>
+        <span style={{fontSize:12,color:"#64748b"}}>{funcs.length} cadastrado(s) {aberto?"▲":"▼"}</span>
+      </button>
+      {aberto && (
+        <div style={{padding:"0 16px 16px"}}>
+          {/* Lista de funcionários */}
+          {funcs.map(f => (
+            <div key={f.id} style={{background:"#0f172a",borderRadius:12,padding:"12px 14px",marginBottom:8,border:"1px solid #1e293b"}}>
+              {editando === f.id ? (
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  <input value={editNome} onChange={e=>setEditNome(e.target.value)} placeholder="Nome" style={{background:"#1e293b",border:"1px solid #f97316",borderRadius:8,color:"#f1f5f9",padding:"8px 10px",fontSize:14}}/>
+                  <input value={editSenha} onChange={e=>setEditSenha(e.target.value)} placeholder="Senha" style={{background:"#1e293b",border:"1px solid #f97316",borderRadius:8,color:"#f1f5f9",padding:"8px 10px",fontSize:14}}/>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={salvarEdit} style={{flex:1,padding:"8px",background:"#22c55e22",border:"1px solid #22c55e44",color:"#22c55e",borderRadius:8,fontSize:13,cursor:"pointer",fontWeight:700}}>Salvar</button>
+                    <button onClick={()=>setEditando(null)} style={{flex:1,padding:"8px",background:"#ef444422",border:"none",color:"#ef4444",borderRadius:8,fontSize:13,cursor:"pointer",fontWeight:700}}>Cancelar</button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{f.emoji} {f.nome}</div>
+                    <div style={{fontSize:11,color:"#64748b",marginTop:2}}>Senha: {f.senha}</div>
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{setEditando(f.id);setEditNome(f.nome);setEditSenha(f.senha);}} style={{background:"#6366f122",border:"1px solid #6366f144",color:"#818cf8",borderRadius:8,padding:"6px 8px",fontSize:13,cursor:"pointer"}}>✏️</button>
+                    <button onClick={()=>excluir(f.id,f.nome)} style={{background:"#ef444422",border:"1px solid #ef444444",color:"#ef4444",borderRadius:8,padding:"6px 8px",fontSize:13,cursor:"pointer"}}>🗑️</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+          {/* Adicionar novo */}
+          <div style={{background:"#0f172a",borderRadius:12,padding:"14px",border:"1px solid #22c55e33",marginTop:8}}>
+            <div style={{fontSize:12,fontWeight:800,color:"#22c55e",marginBottom:10}}>+ Novo Funcionário</div>
+            <input value={novoNome} onChange={e=>setNovoNome(e.target.value)} placeholder="Nome do funcionário" style={{background:"#1e293b",border:"1px solid #334155",borderRadius:8,color:"#f1f5f9",padding:"10px 12px",fontSize:14,width:"100%",boxSizing:"border-box",marginBottom:8}}/>
+            <input value={novaSenha} onChange={e=>setNovaSenha(e.target.value)} placeholder="Senha de acesso" style={{background:"#1e293b",border:"1px solid #334155",borderRadius:8,color:"#f1f5f9",padding:"10px 12px",fontSize:14,width:"100%",boxSizing:"border-box",marginBottom:10}}/>
+            <button onClick={adicionar} style={{width:"100%",padding:12,background:"#22c55e",border:"none",borderRadius:10,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}}>Adicionar</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LoginTela({ onLogin, funcs = FUNCS_PADRAO }) {
   const [senhaModal, setSenhaModal] = useState(null);
   const [senhaTxt, setSenhaTxt] = useState("");
   const [erroSenha, setErroSenha] = useState(false);
@@ -500,14 +577,14 @@ function LoginTela({ onLogin }) {
         <p style={{color:"#94a3b8",fontSize:14,lineHeight:1.6}}>Quem esta usando agora?</p>
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
-        {PERFIS.map(p => (
+        {[GESTOR, ...funcs].map(p => (
           <button key={p.id} onClick={() => tentarLogin(p)} style={{padding:"18px 20px",background:p.role==="gestor"?"linear-gradient(135deg,#1c2333,#0f172a)":"#1e293b",border:`2px solid ${p.role==="gestor"?"#f97316":"#334155"}`,borderRadius:16,color:"#f1f5f9",cursor:"pointer",display:"flex",alignItems:"center",gap:16,textAlign:"left"}}>
             <span style={{fontSize:34}}>{p.emoji}</span>
             <div style={{flex:1}}>
               <div style={{fontSize:17,fontWeight:800,color:p.role==="gestor"?"#f97316":"#f1f5f9"}}>{p.nome}</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{p.role==="gestor"?"Acesso restrito - Requer senha":"Acesso restrito - Requer senha"}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>Acesso restrito - Requer senha</div>
             </div>
-            <span style={{fontSize:22,color:"#475569"}}>{p.senha ? "🔒" : "›"}</span>
+            <span style={{fontSize:22,color:"#475569"}}>🔒</span>
           </button>
         ))}
       </div>
@@ -525,6 +602,7 @@ export default function App() {
   });
   const setPerfil = (p) => { setPerfilState(p); try { localStorage.setItem("ms_perfil_local", p ? JSON.stringify(p) : null); } catch {} };
   const pfOk = true;
+  const [funcs, setFuncs, fcOk] = useCloud("ms_funcs_v1", FUNCS_PADRAO);
   const [alertas, setAlertas, alOk] = useCloud("ms_alertas_v2", ALERTAS_PADRAO);
   const [tarefas, setTarefas, tfOk] = useCloud("ms_tarefas_v2", TAREFAS_PADRAO);
   const [cats, setCats, ctOk] = useCloud("ms_cats_v2", CATS_PADRAO);
@@ -553,7 +631,7 @@ export default function App() {
   const [alertaEstoque, setAlertaEstoque] = useState(false);
   const fileRef = useRef();
 
-  const tudoOkApp = pfOk && alOk && tfOk && ctOk && esOk && rgOk && ftOk && cnOk;
+  const tudoOkApp = pfOk && alOk && tfOk && ctOk && esOk && rgOk && ftOk && cnOk && fcOk;
   const isG = perfil?.role === "gestor";
   const nomeUsr = perfil?.nome || "";
   const dh = hoje();
@@ -660,7 +738,7 @@ export default function App() {
   if (!perfil) {
     return (
       <div style={g.tela}>
-        <LoginTela onLogin={setPerfil}/>
+        <LoginTela onLogin={setPerfil} funcs={funcs}/>
         <style>{css}</style>
       </div>
     );
@@ -842,7 +920,11 @@ export default function App() {
         {tela === "gestor" && isG && (
           <div>
             <div style={{fontSize:13,fontWeight:800,color:"#64748b",textTransform:"uppercase",letterSpacing:1,margin:"12px 0 10px"}}>Painel do Gestor</div>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+
+            {/* Gerenciar Funcionários */}
+            <GerenciarFuncs funcs={funcs} setFuncs={setFuncs} showT={showT}/>
+
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,marginTop:16}}>
               <label style={{fontSize:13,color:"#94a3b8",whiteSpace:"nowrap"}}>Data:</label>
               <input type="date" value={dataSel} onChange={e => setDataSel(e.target.value)} style={{background:"#1e293b",border:"1px solid #334155",borderRadius:8,color:"#f1f5f9",padding:"8px 10px",fontSize:14,flex:1}}/>
             </div>

@@ -629,6 +629,7 @@ export default function App() {
   const [subNova, setSubNova] = useState("tarefa");
   const [infoFoto, setInfoFoto] = useState(null);
   const [alertaEstoque, setAlertaEstoque] = useState(false);
+  const [alertaEstoqueBaixo, setAlertaEstoqueBaixo] = useState(false);
   const fileRef = useRef();
 
   const tudoOkApp = pfOk && alOk && tfOk && ctOk && esOk && rgOk && ftOk && cnOk && fcOk;
@@ -658,6 +659,13 @@ export default function App() {
   const pctSel = totalG > 0 ? Math.round((feitasSel / totalG) * 100) : 0;
   const seq = calcSeq(regs, concl, cats);
 
+  // Itens abaixo do mínimo (última contagem registrada)
+  const [cont] = useCloud("est_cont_v2", {});
+  const itensBaixo = estItens.filter(i => {
+    const ult = Object.keys(cont).sort().reverse().map(d => cont[d]?.[i.id]).find(v => v !== undefined && v !== null);
+    return ult !== undefined && Number(ult) < i.minimo;
+  });
+
   useEffect(() => { if (!isG && (tela === "nova" || tela === "gestor")) setTela("checklist"); }, [perfil]);
 
   // Alerta de dia de contagem de estoque
@@ -669,6 +677,16 @@ export default function App() {
       if (!jaViu) setAlertaEstoque(true);
     }
   }, [perfil]);
+
+  // Alerta de itens baixos para o gestor ao entrar
+  useEffect(() => {
+    if (!perfil || !isG) return;
+    if (itensBaixo.length > 0) {
+      const chave = `alerta_baixo_${dh}`;
+      const jaViu = localStorage.getItem(chave);
+      if (!jaViu) setAlertaEstoqueBaixo(true);
+    }
+  }, [perfil, itensBaixo.length]);
   useEffect(() => {
     if (!perfil || isG) return;
     const check = () => {
@@ -767,6 +785,34 @@ export default function App() {
             <div style={{fontSize:14,color:"#f1f5f9",textAlign:"center",lineHeight:1.6,marginBottom:16}}>Não esqueça de realizar a <strong style={{color:"#22c55e"}}>contagem de estoque</strong> hoje.</div>
             <button onClick={() => { setAlertaEstoque(false); localStorage.setItem(`alerta_estoque_${dh}`, "1"); setTela("estoque"); }} style={{width:"100%",padding:14,background:"#22c55e",border:"none",borderRadius:12,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",marginBottom:8}}>Ir para o Estoque</button>
             <button onClick={() => { setAlertaEstoque(false); localStorage.setItem(`alerta_estoque_${dh}`, "1"); }} style={{width:"100%",padding:12,background:"transparent",border:"1px solid #334155",borderRadius:12,color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer"}}>Lembrar mais tarde</button>
+          </div>
+        </div>
+      )}
+      {alertaEstoqueBaixo && (
+        <div style={{position:"fixed",inset:0,background:"#000c",zIndex:401,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:16}}>
+          <div style={{background:"#1e293b",borderRadius:20,padding:24,width:"100%",maxWidth:440,border:"2px solid #ef4444",boxShadow:"0 8px 40px #ef444444",maxHeight:"80vh",overflowY:"auto"}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚠️</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#ef4444",textAlign:"center",marginBottom:4}}>Estoque Baixo!</div>
+            <div style={{fontSize:13,color:"#94a3b8",textAlign:"center",marginBottom:16}}>{itensBaixo.length} item(s) abaixo do mínimo</div>
+            <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:16}}>
+              {itensBaixo.map(item => {
+                const ult = Object.keys(cont).sort().reverse().map(d => cont[d]?.[item.id]).find(v => v !== undefined && v !== null);
+                return (
+                  <div key={item.id} style={{background:"#2a1a1a",borderRadius:10,padding:"10px 12px",border:"1px solid #ef444433",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#f1f5f9"}}>{item.nome}</div>
+                      <div style={{fontSize:11,color:"#64748b"}}>{item.grupo}</div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:14,fontWeight:900,color:"#ef4444"}}>{ult ?? "?"}</div>
+                      <div style={{fontSize:10,color:"#64748b"}}>min {item.minimo}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={() => { setAlertaEstoqueBaixo(false); localStorage.setItem(`alerta_baixo_${dh}`, "1"); setTela("estoque"); }} style={{width:"100%",padding:14,background:"#ef4444",border:"none",borderRadius:12,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",marginBottom:8}}>Ver Estoque</button>
+            <button onClick={() => { setAlertaEstoqueBaixo(false); localStorage.setItem(`alerta_baixo_${dh}`, "1"); }} style={{width:"100%",padding:12,background:"transparent",border:"1px solid #334155",borderRadius:12,color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer"}}>Fechar</button>
           </div>
         </div>
       )}

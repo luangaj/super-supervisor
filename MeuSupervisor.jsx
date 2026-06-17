@@ -550,6 +550,7 @@ export default function App() {
   const [novaCatNome, setNovaCatNome] = useState("");
   const [subNova, setSubNova] = useState("tarefa");
   const [infoFoto, setInfoFoto] = useState(null);
+  const [alertaEstoque, setAlertaEstoque] = useState(false);
   const fileRef = useRef();
 
   const tudoOkApp = pfOk && alOk && tfOk && ctOk && esOk && rgOk && ftOk && cnOk;
@@ -580,6 +581,16 @@ export default function App() {
   const seq = calcSeq(regs, concl, cats);
 
   useEffect(() => { if (!isG && (tela === "nova" || tela === "gestor")) setTela("checklist"); }, [perfil]);
+
+  // Alerta de dia de contagem de estoque
+  useEffect(() => {
+    if (!perfil) return;
+    if (isDiaQq(dh)) {
+      const chave = `alerta_estoque_${dh}`;
+      const jaViu = localStorage.getItem(chave);
+      if (!jaViu) setAlertaEstoque(true);
+    }
+  }, [perfil]);
   useEffect(() => {
     if (!perfil || isG) return;
     const check = () => {
@@ -670,7 +681,17 @@ export default function App() {
   return (
     <div style={g.tela}>
       {toast && <Toast msg={toast.msg} tipo={toast.tipo}/>}
-      {AlertaOv}
+      {alertaEstoque && (
+        <div style={{position:"fixed",inset:0,background:"#000c",zIndex:400,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:16}}>
+          <div style={{background:"#1e293b",borderRadius:20,padding:24,width:"100%",maxWidth:440,border:"2px solid #22c55e",boxShadow:"0 8px 40px #22c55e44"}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>📦</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#22c55e",textAlign:"center",marginBottom:6}}>Hoje é dia de contagem!</div>
+            <div style={{fontSize:14,color:"#f1f5f9",textAlign:"center",lineHeight:1.6,marginBottom:16}}>Não esqueça de realizar a <strong style={{color:"#22c55e"}}>contagem de estoque</strong> hoje.</div>
+            <button onClick={() => { setAlertaEstoque(false); localStorage.setItem(`alerta_estoque_${dh}`, "1"); setTela("estoque"); }} style={{width:"100%",padding:14,background:"#22c55e",border:"none",borderRadius:12,color:"#fff",fontWeight:900,fontSize:15,cursor:"pointer",marginBottom:8}}>Ir para o Estoque</button>
+            <button onClick={() => { setAlertaEstoque(false); localStorage.setItem(`alerta_estoque_${dh}`, "1"); }} style={{width:"100%",padding:12,background:"transparent",border:"1px solid #334155",borderRadius:12,color:"#64748b",fontWeight:700,fontSize:14,cursor:"pointer"}}>Lembrar mais tarde</button>
+          </div>
+        </div>
+      )}
       {cel && <Celebracao cel={cel} nome={nomeUsr.split(" ")[0]}/>}
       {fotoZoom && <div style={{position:"fixed",inset:0,background:"#000d",zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12}} onClick={() => setFotoZoom(null)}><img src={fotoZoom} style={{maxWidth:"95vw",maxHeight:"80vh",borderRadius:12}} alt="zoom"/><div style={{color:"#fff",fontSize:14,fontWeight:700,background:"#ffffff22",padding:"8px 20px",borderRadius:20}}>Fechar</div></div>}
       {mConc && <Modal icone="🏁" titulo={`Concluir ${catSel}?`} sub="As tarefas ficam bloqueadas para hoje."><BtnM onClick={concluirCat}>Sim, concluir</BtnM><BtnC onClick={() => setMConc(false)}/></Modal>}

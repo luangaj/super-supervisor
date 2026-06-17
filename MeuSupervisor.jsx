@@ -263,6 +263,99 @@ function Loading() {
   );
 }
 
+function ConfigEstoque({ estItens, setEstItens, showT, editMin, setEditMin, novoMin, setNovoMin }) {
+  const grupos = [...new Set(estItens.map(i => i.grupo))];
+  const [editNome, setEditNome] = useState(null);
+  const [novoNome, setNovoNome] = useState("");
+  const [novoItem, setNovoItem] = useState({nome:"", grupo:grupos[0]||"", minimo:"1", freq:"2x"});
+  const [addGrupo, setAddGrupo] = useState(false);
+  const [novoGrupoNome, setNovoGrupoNome] = useState("");
+  const [abaConf, setAbaConf] = useState("itens");
+
+  return (
+    <div>
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        {[["itens","📦","Itens"],["adicionar","➕","Novo"]].map(([id,ic,lb])=>(
+          <button key={id} onClick={()=>setAbaConf(id)} style={{flex:1,padding:"10px 4px",borderRadius:12,border:`1px solid ${abaConf===id?"#f97316":"#334155"}`,background:"#1e293b",color:abaConf===id?"#f97316":"#94a3b8",fontSize:12,fontWeight:700,cursor:"pointer"}}>{ic} {lb}</button>
+        ))}
+      </div>
+
+      {abaConf === "adicionar" && (
+        <div style={{background:"#1e293b",borderRadius:14,padding:16,border:"1px solid #334155",display:"flex",flexDirection:"column",gap:12,marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:800,color:"#f97316"}}>Novo produto</div>
+          <input placeholder="Nome do produto" value={novoItem.nome} onChange={e=>setNovoItem({...novoItem,nome:e.target.value})} style={{background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#f1f5f9",padding:"10px 12px",fontSize:14,width:"100%",boxSizing:"border-box"}}/>
+          <div style={{display:"flex",gap:8}}>
+            <select value={novoItem.grupo} onChange={e=>setNovoItem({...novoItem,grupo:e.target.value})} style={{flex:1,background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#f1f5f9",padding:"10px 12px",fontSize:13}}>
+              {grupos.map(g=><option key={g}>{g}</option>)}
+              <option value="__novo__">+ Novo grupo</option>
+            </select>
+            <select value={novoItem.freq} onChange={e=>setNovoItem({...novoItem,freq:e.target.value})} style={{width:90,background:"#0f172a",border:"1px solid #334155",borderRadius:10,color:"#f1f5f9",padding:"10px 8px",fontSize:13}}>
+              <option value="2x">2x/sem</option>
+              <option value="1x">1x/sem</option>
+            </select>
+          </div>
+          {novoItem.grupo === "__novo__" && (
+            <input placeholder="Nome do novo grupo" value={novoGrupoNome} onChange={e=>setNovoGrupoNome(e.target.value)} style={{background:"#0f172a",border:"1px solid #f97316",borderRadius:10,color:"#f1f5f9",padding:"10px 12px",fontSize:14,width:"100%",boxSizing:"border-box"}}/>
+          )}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:13,color:"#94a3b8"}}>Mínimo:</span>
+            <input type="number" min="0" value={novoItem.minimo} onChange={e=>setNovoItem({...novoItem,minimo:e.target.value})} style={{width:70,background:"#0f172a",border:"1px solid #334155",borderRadius:8,color:"#f1f5f9",padding:"8px 10px",fontSize:14,textAlign:"center"}}/>
+          </div>
+          <button onClick={async()=>{
+            if(!novoItem.nome.trim()) return showT("Digite o nome!","erro");
+            const grpFinal = novoItem.grupo==="__novo__" ? novoGrupoNome.trim() : novoItem.grupo;
+            if(!grpFinal) return showT("Digite o grupo!","erro");
+            const id = "e_"+Date.now();
+            await setEstItens([...estItens,{id,nome:novoItem.nome.trim(),grupo:grpFinal,freq:novoItem.freq,minimo:parseInt(novoItem.minimo)||1,unidade:"und"}]);
+            setNovoItem({nome:"",grupo:grpFinal,minimo:"1",freq:"2x"});
+            setNovoGrupoNome("");
+            showT("Produto adicionado!");
+            setAbaConf("itens");
+          }} style={{width:"100%",padding:12,background:"#f97316",border:"none",borderRadius:10,color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer"}}>+ Adicionar Produto</button>
+        </div>
+      )}
+
+      {abaConf === "itens" && (
+        <div>
+          <div style={{fontSize:12,color:"#64748b",marginBottom:12,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Produtos cadastrados</div>
+          {grupos.map(g => (
+            <div key={g} style={{marginBottom:16}}>
+              <div style={{fontSize:12,fontWeight:800,color:"#94a3b8",marginBottom:8}}>{g}</div>
+              {estItens.filter(i=>i.grupo===g).map(item=>(
+                <div key={item.id} style={{background:"#1e293b",borderRadius:12,padding:"12px 14px",marginBottom:8,border:"1px solid #334155"}}>
+                  {editNome===item.id ? (
+                    <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:8}}>
+                      <input value={novoNome} onChange={e=>setNovoNome(e.target.value)} style={{flex:1,background:"#0f172a",border:"1px solid #f97316",borderRadius:8,color:"#f1f5f9",padding:"6px 10px",fontSize:14}}/>
+                      <button onClick={async()=>{if(!novoNome.trim())return showT("Nome vazio!","erro");await setEstItens(estItens.map(i=>i.id===item.id?{...i,nome:novoNome.trim()}:i));setEditNome(null);showT("Renomeado!");}} style={{background:"#22c55e22",border:"1px solid #22c55e44",color:"#22c55e",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>OK</button>
+                      <button onClick={()=>setEditNome(null)} style={{background:"#ef444422",border:"none",color:"#ef4444",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>X</button>
+                    </div>
+                  ) : (
+                    <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9",marginBottom:8}}>{item.nome}</div>
+                  )}
+                  <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                    {editMin===item.id ? (
+                      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                        <input type="number" value={novoMin} onChange={e=>setNovoMin(e.target.value)} style={{width:60,background:"#0f172a",border:"1px solid #f97316",borderRadius:8,color:"#f1f5f9",padding:"6px 8px",fontSize:14,textAlign:"center"}}/>
+                        <button onClick={async()=>{const v=parseInt(novoMin);if(isNaN(v)||v<0)return showT("Invalido!","erro");await setEstItens(estItens.map(i=>i.id===item.id?{...i,minimo:v}:i));setEditMin(null);showT("Salvo!");}} style={{background:"#22c55e22",border:"1px solid #22c55e44",color:"#22c55e",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>OK</button>
+                        <button onClick={()=>setEditMin(null)} style={{background:"#ef444422",border:"none",color:"#ef4444",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>X</button>
+                      </div>
+                    ) : (
+                      <span style={{fontSize:11,color:"#94a3b8",background:"#0f172a",padding:"4px 10px",borderRadius:8,fontWeight:700}}>min {item.minimo}</span>
+                    )}
+                    <button onClick={()=>{setEditMin(item.id);setNovoMin(String(item.minimo));setEditNome(null);}} style={{background:"#f9731622",border:"1px solid #f9741644",color:"#f97316",borderRadius:8,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>min</button>
+                    <button onClick={()=>{setEditNome(item.id);setNovoNome(item.nome);setEditMin(null);}} style={{background:"#6366f122",border:"1px solid #6366f144",color:"#818cf8",borderRadius:8,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>✏️</button>
+                    <button onClick={async()=>{if(!window.confirm(`Excluir "${item.nome}"?`))return;await setEstItens(estItens.filter(i=>i.id!==item.id));showT("Excluido!");}} style={{background:"#ef444422",border:"1px solid #ef444444",color:"#ef4444",borderRadius:8,padding:"4px 8px",fontSize:11,cursor:"pointer"}}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Estoque({ nomeusr, isG, estItens, setEstItens, onCel }) {
   const [cont, setCont, cOk] = useCloud("est_cont_v2", {});
   const [conc, setConc, ncOk] = useCloud("est_concl_v2", {});
@@ -358,22 +451,7 @@ function Estoque({ nomeusr, isG, estItens, setEstItens, onCel }) {
         <div>{alertas.length === 0 ? <div style={{background:"#1a2e22",border:"1px solid #22c55e44",borderRadius:12,padding:14,textAlign:"center",fontSize:14,color:"#22c55e",fontWeight:800}}>Todos os itens acima do minimo!</div> : alertas.map(item => <div key={item.id} style={{background:"#2a1a1a",borderRadius:14,padding:"14px 16px",marginBottom:10,border:"1px solid #ef444466"}}><div style={{fontSize:15,fontWeight:700,color:"#ef4444"}}>{item.nome}</div><div style={{fontSize:12,color:"#94a3b8",marginTop:2}}>Minimo: {item.minimo} - {item.grupo}</div></div>)}</div>
       )}
       {sub === "config" && isG && (
-        <div>
-          <div style={{fontSize:12,color:"#64748b",marginBottom:12,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Minimos por item</div>
-          {GRUPOS_EST.map(g => (
-            <div key={g} style={{marginBottom:16}}>
-              <div style={{fontSize:12,fontWeight:800,color:"#94a3b8",marginBottom:8}}>{g}</div>
-              {estItens.filter(i => i.grupo === g).map(item => (
-                <div key={item.id} style={{background:"#1e293b",borderRadius:12,padding:"12px 16px",marginBottom:8,border:"1px solid #334155",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:14,fontWeight:700,color:"#f1f5f9"}}>{item.nome}</div>
-                  {editMin === item.id
-                    ? <div style={{display:"flex",gap:6,alignItems:"center"}}><input type="number" value={novoMin} onChange={e => setNovoMin(e.target.value)} style={{width:60,background:"#0f172a",border:"1px solid #f97316",borderRadius:8,color:"#f1f5f9",padding:"6px 8px",fontSize:14,textAlign:"center"}}/><button onClick={async () => { const v = parseInt(novoMin); if (isNaN(v)||v<0) return showT("Invalido!","erro"); await setEstItens(estItens.map(i => i.id===item.id?{...i,minimo:v}:i)); setEditMin(null); showT("Salvo!"); }} style={{background:"#22c55e22",border:"1px solid #22c55e44",color:"#22c55e",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>OK</button><button onClick={() => setEditMin(null)} style={{background:"#ef444422",border:"none",color:"#ef4444",borderRadius:8,padding:"6px 10px",fontSize:13,cursor:"pointer"}}>X</button></div>
-                    : <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:12,color:"#94a3b8",background:"#0f172a",padding:"4px 10px",borderRadius:8,fontWeight:700}}>min {item.minimo}</span><button onClick={() => { setEditMin(item.id); setNovoMin(String(item.minimo)); }} style={{background:"#f9731622",border:"1px solid #f9741644",color:"#f97316",borderRadius:8,padding:"4px 8px",fontSize:13,cursor:"pointer"}}>editar</button></div>}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
+        <ConfigEstoque estItens={estItens} setEstItens={setEstItens} showT={showT} editMin={editMin} setEditMin={setEditMin} novoMin={novoMin} setNovoMin={setNovoMin}/>
       )}
     </div>
   );

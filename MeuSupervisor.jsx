@@ -156,8 +156,8 @@ const ESTOQUE_PADRAO = [
 
 const GRUPOS_EST = [...new Set(ESTOQUE_PADRAO.map(i => i.grupo))];
 const PERFIS = [
-  {id:"gestor", nome:"Luan (Gestor)",  role:"gestor",      emoji:"👑", senha:"1234"},
-  {id:"func1",  nome:"Funcionario 1",  role:"funcionario", emoji:"👤"},
+  {id:"gestor", nome:"Luan (Gestor)",  role:"gestor",      emoji:"👑", senha:"26102019"},
+  {id:"func1",  nome:"Funcionario 1",  role:"funcionario", emoji:"👤", senha:"1507"},
 ];
 
 const hoje      = () => new Date().toISOString().split("T")[0];
@@ -505,7 +505,7 @@ function LoginTela({ onLogin }) {
             <span style={{fontSize:34}}>{p.emoji}</span>
             <div style={{flex:1}}>
               <div style={{fontSize:17,fontWeight:800,color:p.role==="gestor"?"#f97316":"#f1f5f9"}}>{p.nome}</div>
-              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{p.role==="gestor"?"Acesso restrito - Requer senha":"Acesso as tarefas e estoque"}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{p.role==="gestor"?"Acesso restrito - Requer senha":"Acesso restrito - Requer senha"}</div>
             </div>
             <span style={{fontSize:22,color:"#475569"}}>{p.senha ? "🔒" : "›"}</span>
           </button>
